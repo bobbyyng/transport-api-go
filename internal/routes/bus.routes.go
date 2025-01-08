@@ -30,6 +30,8 @@ func (impl *BusImpl) GetNearestStops(w http.ResponseWriter, r *http.Request) {
 
 	var routes []*models.Route
 	routes, _ = models.GetActiveRoutesByTransportType(r.Context(), impl.DB, 1)
+	var nearestStops []models.NearestStop
+	nearestStops, _ = models.GetActiveNearestStops(r.Context(), impl.DB, latitude, longitude, 10)
 
 	response := map[string]interface{}{
 		"data": routes,
@@ -37,6 +39,19 @@ func (impl *BusImpl) GetNearestStops(w http.ResponseWriter, r *http.Request) {
 			"latitude":  latitude,
 			"longitude": longitude,
 		},
+	}
+
+	for index, nearestStop := range nearestStops {
+		if index > 10 {
+			continue
+		}
+
+		var routeStops []*models.RouteStop
+		routeStops, _ = models.GetActiveRouteStopsByStopId(r.Context(), impl.DB, 1, nearestStop.Stop, "1")
+		for _, routeStop := range routeStops {
+			route, _ := models.GetFirstActiveRouteByTransportTypeAndRouteStop(r.Context(), impl.DB, 1, routeStop)
+
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
