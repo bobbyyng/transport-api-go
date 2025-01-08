@@ -28,11 +28,16 @@ func (impl *BusImpl) GetNearestStops(w http.ResponseWriter, r *http.Request) {
 	latitude := vars["latitude"]
 	longitude := vars["longitude"]
 
-	response := map[string]string{
-		"latitude":  latitude,
-		"longitude": longitude,
+	var routes []*models.Route
+	routes, _ = models.GetActiveRoutesByTransportType(r.Context(), impl.DB, 1)
+
+	response := map[string]interface{}{
+		"data": routes,
+		"meta": map[string]interface{}{
+			"latitude":  latitude,
+			"longitude": longitude,
+		},
 	}
-	models.GetAllRoutes(r.Context(), impl.DB)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
