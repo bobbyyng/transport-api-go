@@ -31,6 +31,14 @@ func (impl *BusImpl) GetNearestStops(w http.ResponseWriter, r *http.Request) {
 	longitude := vars["longitude"]
 	queryParams := r.URL.Query()
 	searchNearestStopsLimit := queryParams.Get("searchNearestStopsLimit")
+	page := queryParams.Get("page")
+	if page == "" {
+		page = "1"
+	}
+	pageSize := queryParams.Get("pageSize")
+	if pageSize == "" {
+		pageSize = "20"
+	}
 
 	limit := 30
 	if searchNearestStopsLimit != "" {
@@ -109,6 +117,29 @@ func (impl *BusImpl) GetNearestStops(w http.ResponseWriter, r *http.Request) {
 			nearestRoutes = append(nearestRoutes, nearestRoute)
 		}
 	}
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		http.Error(w, "Invalid page", http.StatusBadRequest)
+		return
+	}
+
+	pageSizeInt, err := strconv.Atoi(pageSize)
+	if err != nil {
+		http.Error(w, "Invalid pageSize", http.StatusBadRequest)
+		return
+	}
+
+	offset := (pageInt - 1) * pageSizeInt
+	response["meta"].(map[string]interface{})["pagination"] = map[string]interface{}{
+		"total_pages":  len(nearestRoutes) / pageSizeInt,
+		"per_page":     pageSizeInt,
+		"current_page": pageInt,
+		"count":        len(nearestRoutes[offset : offset+pageSizeInt]),
+		"total":        len(nearestRoutes),
+	}
+
+	nearestRoutes = nearestRoutes[offset : offset+pageSizeInt]
+
 	response["data"] = nearestRoutes
 
 	w.Header().Set("Content-Type", "application/json")
